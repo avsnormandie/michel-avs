@@ -33,13 +33,15 @@ function hasEventScope(client: GatewayWsClient, event: string): boolean {
 
 export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient> }) {
   let seq = 0;
-  const broadcast = (
+
+  const broadcastInternal = (
     event: string,
     payload: unknown,
     opts?: {
       dropIfSlow?: boolean;
       stateVersion?: { presence?: number; health?: number };
     },
+    targetConnIds?: ReadonlySet<string>,
   ) => {
     const eventSeq = ++seq;
     const frame = JSON.stringify({
@@ -53,6 +55,7 @@ export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient>
       event,
       seq: eventSeq,
       clients: params.clients.size,
+      targets: targetConnIds ? targetConnIds.size : undefined,
       dropIfSlow: opts?.dropIfSlow,
       presenceVersion: opts?.stateVersion?.presence,
       healthVersion: opts?.stateVersion?.health,
@@ -62,6 +65,9 @@ export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient>
     }
     logWs("out", "event", logMeta);
     for (const c of params.clients) {
+      if (targetConnIds && !targetConnIds.has(c.connId)) {
+        continue;
+      }
       if (!hasEventScope(c, event)) {
         continue;
       }
@@ -84,5 +90,30 @@ export function createGatewayBroadcaster(params: { clients: Set<GatewayWsClient>
       }
     }
   };
-  return { broadcast };
+
+  const broadcast = (
+    event: string,
+    payload: unknown,
+    opts?: {
+      dropIfSlow?: boolean;
+      stateVersion?: { presence?: number; health?: number };
+    },
+  ) => broadcastInternal(event, payload, opts);
+
+  const broadcastToConnIds = (
+    event: string,
+    payload: unknown,
+    connIds: ReadonlySet<string>,
+    opts?: {
+      dropIfSlow?: boolean;
+      stateVersion?: { presence?: number; health?: number };
+    },
+  ) => {
+    if (connIds.size === 0) {
+      return;
+    }
+    broadcastInternal(event, payload, opts, connIds);
+  };
+
+  return { broadcast, broadcastToConnIds };
 }
