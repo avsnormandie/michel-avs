@@ -8,12 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial fork from Clawdbot/OpenClaw
 - AVS-specific customizations planned:
-  - Compaction Guard (session_before_compact protection)
   - Tool Result Limiter
   - /compact manual command
-  - Context monitoring integration
+
+## [0.2.0] - 2026-02-04
+
+### Added
+- `avs-compaction-guard.ts` - Extension de sauvegarde automatique vers la KB AVS
+  - Intercepte `session_before_compact`
+  - Extrait le contexte important (requetes utilisateur, decisions)
+  - Sauvegarde vers la base de connaissances AVS
+  - Envoie notification Telegram avant compaction
+  - Listage des fichiers modifies/lus
+
+### Changed
+- Moved Compaction Guard from planned to implemented
 
 ## [0.1.0] - 2026-02-04
 
@@ -26,5 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repository renamed to michel-avs
 - Description updated for AVS Technologies
 
-[Unreleased]: https://github.com/avsnormandie/michel-avs/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/avsnormandie/michel-avs/releases/tag/v0.1.0
+[Unreleased]: https://github.com/avsnormandie/michel-avs/compare/avs-0.2.0...HEAD
+[0.2.0]: https://github.com/avsnormandie/michel-avs/compare/avs-0.1.0...avs-0.2.0
+[0.1.0]: https://github.com/avsnormandie/michel-avs/releases/tag/avs-0.1.0
