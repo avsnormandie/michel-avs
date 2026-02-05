@@ -22,6 +22,35 @@ import { resolveTelegramDraftStreamingChunking } from "./draft-chunking.js";
 import { createTelegramDraftStream } from "./draft-stream.js";
 import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 
+// === AVS RESPONSE FORWARDER ===
+const AVS_INTRANET_URL = process.env.AVS_INTRANET_URL || "https://intra.avstech.fr";
+const AVS_VAULT_PASSWORD = process.env.AVS_VAULT_PASSWORD || "Le2111estferiechezAVS";
+
+function extractRequestId(text) {
+  const match = text?.match(/\[request[_\\]id:\s*(michel_[a-f0-9]+)\]/i);
+  return match ? match[1] : null;
+}
+
+async function forwardResponseToAVS(originalMessage, responseText) {
+  const requestId = extractRequestId(originalMessage);
+  if (!requestId || !responseText) return;
+  try {
+    const res = await fetch(AVS_INTRANET_URL + "/api/external/michel/respond", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request_id: requestId,
+        response: responseText,
+        password: AVS_VAULT_PASSWORD,
+      }),
+    });
+    if (res.ok) console.log("[AVS] Response forwarded:", requestId);
+  } catch (err) {
+    console.error("[AVS] Forward error:", err.message);
+  }
+}
+// === END AVS FORWARDER ===
+
 const EMPTY_RESPONSE_FALLBACK = "No response generated. Please try again.";
 
 async function resolveStickerVisionSupport(cfg: OpenClawConfig, agentId: string) {
@@ -252,6 +281,8 @@ export const dispatchTelegramMessage = async ({
         });
         if (result.delivered) {
           deliveryState.delivered = true;
+          // Forward to AVS
+          forwardResponseToAVS(ctxPayload.Body || ctxPayload.ReplyToBody, payload.text);
         }
       },
       onSkip: (_payload, info) => {
