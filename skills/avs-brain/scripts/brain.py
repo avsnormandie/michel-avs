@@ -476,6 +476,88 @@ def cmd_forget(args):
     return 0
 
 
+def pull_from_avs(conn):
+    """Pull nodes from AVS KB into local brain.db"""
+    import urllib.request
+
+    url = f"{AVS_INTRANET_URL}/api/external/knowledge/nodes"
+    req = urllib.request.Request(
+        url,
+        headers={'X-API-Key': AVS_API_KEY},
+        method='GET'
+    )
+
+    with urllib.request.urlopen(req, timeout=60) as response:
+        data = json.loads(response.read().decode('utf-8'))
+
+    nodes = data.get('nodes', [])
+    pulled = 0
+    skipped = 0
+
+    # Map KB types to brain types
+    type_map = {
+        'product': 'product', 'company': 'company', 'person': 'person',
+        'concept': 'concept', 'decision': 'decision', 'resource': 'resource',
+    }
+
+    # Get existing avs_node_ids to skip duplicates
+    existing = set()
+    for row in conn.execute("SELECT avs_node_id FROM memories WHERE avs_node_id IS NOT NULL").fetchall():
+        existing.add(row['avs_node_id'])
+
+    for node in nodes:
+        node_id = node.get('id')
+        if node_id in existing:
+            skipped += 1
+            continue
+
+        node_type = type_map.get(node.get('type', ''), 'resource')
+        title = node.get('title', 'Sans titre')
+        content = node.get('content', '') or ''
+        tags = node.get('tags', [])
+        created_at = node.get('createdAt', datetime.now().isoformat())
+
+        # Estimate importance from content length and tags
+        importance = 50
+        if len(content) > 500:
+            importance = 60
+        if len(content) > 1000:
+            importance = 70
+        if any(t in tags for t in ['infrastructure', 'api', 'credentials', 'securite', 'procedure']):
+            importance = 75
+        if any(t in tags for t in ['michel-brain', 'identite', 'equipe']):
+            importance = 80
+
+        memory_id = generate_id('mem')
+        tags_json = json.dumps(tags)
+
+        conn.execute("""
+            INSERT INTO memories (id, title, content, type, importance, tags, avs_node_id, created_at, synced_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        """, (memory_id, title, content, node_type, importance, tags_json, node_id, created_at))
+
+        # Store embedding
+        embed_text = f"{title} {content[:500]}"
+        store_embedding(conn, memory_id, embed_text)
+
+        pulled += 1
+
+        if pulled % 50 == 0:
+            print(f"[AVS Brain] Pulled {pulled} nodes...", file=sys.stderr)
+            conn.commit()
+
+    conn.commit()
+
+    # Log the pull
+    conn.execute("""
+        INSERT INTO sync_log (action, status, details)
+        VALUES ('pull', 'success', ?)
+    """, (f"Pulled {pulled} nodes, skipped {skipped} existing",))
+    conn.commit()
+
+    return pulled, skipped
+
+
 def cmd_sync(args):
     """Sync with AVS KB"""
     conn = init_db()
@@ -486,6 +568,8 @@ def cmd_sync(args):
 
     pushed = 0
     failed = 0
+    pulled = 0
+    skipped = 0
 
     if args.direction in ('push', 'both'):
         rows = conn.execute("""
@@ -500,13 +584,20 @@ def cmd_sync(args):
             else:
                 failed += 1
 
+    if args.direction in ('pull', 'both'):
+        try:
+            pulled, skipped = pull_from_avs(conn)
+        except Exception as e:
+            print(f"[AVS Brain] Pull error: {e}", file=sys.stderr)
+
     result = {
         'success': True,
         'direction': args.direction,
         'pushed': pushed,
         'failed': failed,
-        'pulled': 0,
-        'message': f'Sync complete: {pushed} pushed, {failed} failed'
+        'pulled': pulled,
+        'skipped': skipped,
+        'message': f'Sync complete: {pushed} pushed, {failed} failed, {pulled} pulled, {skipped} skipped'
     }
 
     print(json.dumps(result, indent=2, ensure_ascii=False))
