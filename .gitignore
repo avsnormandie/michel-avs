@@ -64,7 +64,6 @@ apps/ios/*.mobileprovision
 
 # Local untracked files
 .local/
-.vscode/
 IDENTITY.md
 USER.md
 .tgz
@@ -77,3 +76,9 @@ USER.md
 logs/
 skills/avs-brain/brain.db
 skills/avs-brain/data/
+
+# Agent credentials and memory (NEVER COMMIT)
+memory/
+.agent/*.json
+!.agent/workflows/
+local/
