@@ -30,14 +30,19 @@ import { cacheSticker, describeStickerImage } from "./sticker-cache.js";
 const AVS_INTRANET_URL = process.env.AVS_INTRANET_URL || "https://intra.avstech.fr";
 const AVS_VAULT_PASSWORD = process.env.AVS_VAULT_PASSWORD || "Le2111estferiechezAVS";
 
-function extractRequestId(text) {
+function extractRequestId(text: string | undefined): string | null {
   const match = text?.match(/\[request[_\\]id:\s*(michel_[a-f0-9]+)\]/i);
   return match ? match[1] : null;
 }
 
-async function forwardResponseToAVS(originalMessage, responseText) {
+async function forwardResponseToAVS(
+  originalMessage: string | undefined,
+  responseText: string | undefined,
+) {
   const requestId = extractRequestId(originalMessage);
-  if (!requestId || !responseText) return;
+  if (!requestId || !responseText) {
+    return;
+  }
   try {
     const res = await fetch(AVS_INTRANET_URL + "/api/external/michel/respond", {
       method: "POST",
@@ -48,9 +53,11 @@ async function forwardResponseToAVS(originalMessage, responseText) {
         password: AVS_VAULT_PASSWORD,
       }),
     });
-    if (res.ok) console.log("[AVS] Response forwarded:", requestId);
-  } catch (err) {
-    console.error("[AVS] Forward error:", err.message);
+    if (res.ok) {
+      console.log("[AVS] Response forwarded:", requestId);
+    }
+  } catch (err: unknown) {
+    console.error("[AVS] Forward error:", err instanceof Error ? err.message : String(err));
   }
 }
 // === END AVS FORWARDER ===
@@ -308,7 +315,7 @@ export const dispatchTelegramMessage = async ({
         if (result.delivered) {
           deliveryState.delivered = true;
           // Forward to AVS
-          forwardResponseToAVS(ctxPayload.Body || ctxPayload.ReplyToBody, payload.text);
+          void forwardResponseToAVS(ctxPayload.Body || ctxPayload.ReplyToBody, payload.text);
         }
       },
       onSkip: (_payload, info) => {

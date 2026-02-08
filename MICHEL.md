@@ -35,6 +35,7 @@ Michel est le fork AVS de [Clawdbot/OpenClaw](https://github.com/clawdbot/clawdb
 ## Personnalisations AVS
 
 ### 1. Compaction Guard (P1)
+
 Protection contre la perte de contexte lors de la compaction automatique.
 
 ```javascript
@@ -45,6 +46,7 @@ Protection contre la perte de contexte lors de la compaction automatique.
 **Status**: ðŸ”„ En cours
 
 ### 2. Context Monitor (P2)
+
 Script externe surveillant l'utilisation du contexte.
 
 - **Seuil warning** : 70%
@@ -54,11 +56,13 @@ Script externe surveillant l'utilisation du contexte.
 **Status**: âœ… ImplÃ©mentÃ© (`~/michel-workspace/scripts/context-monitor.sh`)
 
 ### 3. Tool Result Limiter (P6)
+
 Limite automatique des rÃ©sultats d'outils volumineux.
 
 **Status**: ðŸ“‹ PlanifiÃ©
 
 ### 4. Commande /compact (P7)
+
 Commande manuelle pour dÃ©clencher la compaction avec sauvegarde prÃ©alable.
 
 **Status**: ðŸ“‹ PlanifiÃ©
@@ -77,6 +81,7 @@ pnpm build
 ## Configuration
 
 ### Variables d'environnement
+
 ```bash
 # ~/.bashrc ou ~/.profile
 export AVS_API_KEY="avs_xxx..."
@@ -84,6 +89,7 @@ export AVS_INTRANET_URL="https://intra.avstech.fr"
 ```
 
 ### Vault AVS
+
 Michel utilise le Vault AVS pour rÃ©cupÃ©rer ses credentials de maniÃ¨re sÃ©curisÃ©e :
 
 ```bash

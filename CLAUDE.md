@@ -35,6 +35,7 @@ pnpm protocol:check             # Verify protocol schema + Swift codegen are in 
 ```
 
 Run a single test file:
+
 ```bash
 npx vitest run src/path/to/file.test.ts
 ```
@@ -92,23 +93,27 @@ Channels (WhatsApp/Telegram/Slack/Discord/...)
 ## Key Conventions
 
 ### TypeScript
+
 - **Strict mode** enabled, target ES2023, module NodeNext
 - **Legacy decorators** (`experimentalDecorators: true`, `useDefineForClassFields: false`) — required by the Lit-based Control UI. Do not switch to standard decorators without updating UI build tooling.
 - Calendar-based versioning: `YYYY.M.D`
 
 ### Testing
+
 - **Vitest** with `pool: "forks"` for test isolation
 - Test files: `*.test.ts` (unit), `*.e2e.test.ts` (e2e), `*.live.test.ts` (live API, excluded from normal runs)
 - Multiple vitest configs: `vitest.config.ts` (main), `vitest.e2e.config.ts`, `vitest.live.config.ts`, `vitest.unit.config.ts`, `vitest.gateway.config.ts`, `vitest.extensions.config.ts`
 - Test timeout: 120s; coverage provider: V8
 
 ### Linting & Formatting
+
 - **OxLint** (Rust-based) with type-aware rules, plugins: unicorn, typescript, oxc
 - **OxFmt** for formatting
 - **SwiftLint + SwiftFormat** for iOS/macOS code
 - Git hooks via `git-hooks/` directory (set by `pnpm prepare`)
 
 ### Security
+
 - Treat inbound DMs as untrusted input
 - DM pairing by default (allowlist-based access)
 - Never hardcode API keys — use environment variables (`$AVS_API_KEY`)

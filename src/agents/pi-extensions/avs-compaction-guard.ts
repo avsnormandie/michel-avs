@@ -34,7 +34,9 @@ async function saveToKnowledgeBase(payload: KnowledgeNodePayload): Promise<boole
     });
 
     if (!response.ok) {
-      console.warn(`[AVS Compaction Guard] KB save failed: ${response.status} ${response.statusText}`);
+      console.warn(
+        `[AVS Compaction Guard] KB save failed: ${response.status} ${response.statusText}`,
+      );
       return false;
     }
 
@@ -42,13 +44,17 @@ async function saveToKnowledgeBase(payload: KnowledgeNodePayload): Promise<boole
     console.log(`[AVS Compaction Guard] Context saved to KB: node ${result.id}`);
     return true;
   } catch (error) {
-    console.warn(`[AVS Compaction Guard] KB save error: ${error instanceof Error ? error.message : String(error)}`);
+    console.warn(
+      `[AVS Compaction Guard] KB save error: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return false;
   }
 }
 
 async function sendTelegramAlert(message: string): Promise<void> {
-  if (!AVS_API_KEY) return;
+  if (!AVS_API_KEY) {
+    return;
+  }
 
   try {
     await fetch(`${AVS_INTRANET_URL}/api/external/michel`, {
@@ -71,7 +77,9 @@ function extractImportantContext(messages: unknown[]): string {
   const important: string[] = [];
 
   for (const msg of messages) {
-    if (!msg || typeof msg !== "object") continue;
+    if (!msg || typeof msg !== "object") {
+      continue;
+    }
 
     const message = msg as { role?: string; content?: unknown };
 
@@ -79,7 +87,9 @@ function extractImportantContext(messages: unknown[]): string {
     if (message.role === "user" && message.content) {
       const content = Array.isArray(message.content)
         ? message.content.map((c: { text?: string }) => c.text || "").join(" ")
-        : String(message.content);
+        : typeof message.content === "string"
+          ? message.content
+          : JSON.stringify(message.content);
 
       if (content.length > 50) {
         important.push(`[User] ${content.slice(0, 500)}${content.length > 500 ? "..." : ""}`);
@@ -90,13 +100,21 @@ function extractImportantContext(messages: unknown[]): string {
     if (message.role === "assistant" && message.content) {
       const content = Array.isArray(message.content)
         ? message.content.map((c: { text?: string }) => c.text || "").join(" ")
-        : String(message.content);
+        : typeof message.content === "string"
+          ? message.content
+          : JSON.stringify(message.content);
 
       // Look for conclusions, decisions, summaries
       const conclusionPatterns = [
-        /en rÃ©sumÃ©/i, /en conclusion/i, /j'ai (crÃ©Ã©|modifiÃ©|ajoutÃ©)/i,
-        /voici ce que/i, /le problÃ¨me Ã©tait/i, /la solution/i,
-        /terminÃ©/i, /commit/i, /deployed/i
+        /en rÃ©sumÃ©/i,
+        /en conclusion/i,
+        /j'ai (crÃ©Ã©|modifiÃ©|ajoutÃ©)/i,
+        /voici ce que/i,
+        /le problÃ¨me Ã©tait/i,
+        /la solution/i,
+        /terminÃ©/i,
+        /commit/i,
+        /deployed/i,
       ];
 
       for (const pattern of conclusionPatterns) {
@@ -133,14 +151,22 @@ export default function avsCompactionGuardExtension(api: ExtensionAPI): void {
     }
 
     if (edited.size > 0 || written.size > 0) {
-      const modifiedFiles = [...new Set([...edited, ...written])].sort();
-      contextParts.push("## Fichiers modifiÃ©s\n\n" + modifiedFiles.map(f => `- ${f}`).join("\n"));
+      const modifiedFiles = [...new Set([...edited, ...written])].toSorted();
+      contextParts.push(
+        "## Fichiers modifiÃ©s\n\n" + modifiedFiles.map((f) => `- ${f}`).join("\n"),
+      );
     }
 
     if (read.size > 0) {
-      const readFiles = [...read].filter(f => !edited.has(f) && !written.has(f)).sort();
+      const readFiles = [...read].filter((f) => !edited.has(f) && !written.has(f)).toSorted();
       if (readFiles.length > 0) {
-        contextParts.push("## Fichiers lus\n\n" + readFiles.slice(0, 20).map(f => `- ${f}`).join("\n"));
+        contextParts.push(
+          "## Fichiers lus\n\n" +
+            readFiles
+              .slice(0, 20)
+              .map((f) => `- ${f}`)
+              .join("\n"),
+        );
       }
     }
 
@@ -162,11 +188,11 @@ export default function avsCompactionGuardExtension(api: ExtensionAPI): void {
     // Send notification
     if (saved) {
       await sendTelegramAlert(
-        `ðŸ“¦ Compaction en cours. Contexte sauvegardÃ© dans la KB (${allMessages.length} messages rÃ©sumÃ©s).`
+        `ðŸ“¦ Compaction en cours. Contexte sauvegardÃ© dans la KB (${allMessages.length} messages rÃ©sumÃ©s).`,
       );
     } else {
       await sendTelegramAlert(
-        `âš ï¸ Compaction en cours mais sauvegarde KB Ã©chouÃ©e. ${allMessages.length} messages vont Ãªtre rÃ©sumÃ©s.`
+        `âš ï¸ Compaction en cours mais sauvegarde KB Ã©chouÃ©e. ${allMessages.length} messages vont Ãªtre rÃ©sumÃ©s.`,
       );
     }
 
