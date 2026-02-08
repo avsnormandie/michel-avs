@@ -1,186 +1,662 @@
-# Repository Guidelines
+# AGENTS.md - Your Workspace
 
-- Repo: https://github.com/openclaw/openclaw
-- GitHub issues/comments/PR comments: use literal multiline strings or `-F - <<'EOF'` (or $'...') for real newlines; never embed "\\n".
+This folder is home. Treat it that way.
 
-## Project Structure & Module Organization
+## First Run
 
-- Source code: `src/` (CLI wiring in `src/cli`, commands in `src/commands`, web provider in `src/provider-web.ts`, infra in `src/infra`, media pipeline in `src/media`).
-- Tests: colocated `*.test.ts`.
-- Docs: `docs/` (images, queue, Pi config). Built output lives in `dist/`.
-- Plugins/extensions: live under `extensions/*` (workspace packages). Keep plugin-only deps in the extension `package.json`; do not add them to the root `package.json` unless core uses them.
-- Plugins: install runs `npm install --omit=dev` in plugin dir; runtime deps must live in `dependencies`. Avoid `workspace:*` in `dependencies` (npm install breaks); put `openclaw` in `devDependencies` or `peerDependencies` instead (runtime resolves `openclaw/plugin-sdk` via jiti alias).
-- Installers served from `https://openclaw.ai/*`: live in the sibling repo `../openclaw.ai` (`public/install.sh`, `public/install-cli.sh`, `public/install.ps1`).
-- Messaging channels: always consider **all** built-in + extension channels when refactoring shared logic (routing, allowlists, pairing, command gating, onboarding, docs).
-  - Core channel docs: `docs/channels/`
-  - Core channel code: `src/telegram`, `src/discord`, `src/slack`, `src/signal`, `src/imessage`, `src/web` (WhatsApp web), `src/channels`, `src/routing`
-  - Extensions (channel plugins): `extensions/*` (e.g. `extensions/msteams`, `extensions/matrix`, `extensions/zalo`, `extensions/zalouser`, `extensions/voice-call`)
-- When adding channels/extensions/apps/docs, review `.github/labeler.yml` for label coverage.
+If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out who you are, then delete it. You won't need it again.
 
-## Docs Linking (Mintlify)
+## Every Session
 
-- Docs are hosted on Mintlify (docs.openclaw.ai).
-- Internal doc links in `docs/**/*.md`: root-relative, no `.md`/`.mdx` (example: `[Config](/configuration)`).
-- Section cross-references: use anchors on root-relative paths (example: `[Hooks](/configuration#hooks)`).
-- Doc headings and anchors: avoid em dashes and apostrophes in headings because they break Mintlify anchor links.
-- When Peter asks for links, reply with full `https://docs.openclaw.ai/...` URLs (not root-relative).
-- When you touch docs, end the reply with the `https://docs.openclaw.ai/...` URLs you referenced.
-- README (GitHub): keep absolute docs URLs (`https://docs.openclaw.ai/...`) so links work on GitHub.
-- Docs content must be generic: no personal device names/hostnames/paths; use placeholders like `user@gateway-host` and “gateway host”.
+Before doing anything else:
 
-## Docs i18n (zh-CN)
+1. Read `SOUL.md` — this is who you are
+2. Read `USER.md` — this is who you're helping
+3. Run `brain stats` pour voir l'etat de ta memoire
 
-- `docs/zh-CN/**` is generated; do not edit unless the user explicitly asks.
-- Pipeline: update English docs → adjust glossary (`docs/.i18n/glossary.zh-CN.json`) → run `scripts/docs-i18n` → apply targeted fixes only if instructed.
-- Translation memory: `docs/.i18n/zh-CN.tm.jsonl` (generated).
-- See `docs/.i18n/README.md`.
-- The pipeline can be slow/inefficient; if it’s dragging, ping @jospalmbier on Discord instead of hacking around it.
+Don't ask permission. Just do it.
 
-## exe.dev VM ops (general)
+## Memory - Skill avs-brain
 
-- Access: stable path is `ssh exe.dev` then `ssh vm-name` (assume SSH key already set).
-- SSH flaky: use exe.dev web terminal or Shelley (web agent); keep a tmux session for long ops.
-- Update: `sudo npm i -g openclaw@latest` (global install needs root on `/usr/lib/node_modules`).
-- Config: use `openclaw config set ...`; ensure `gateway.mode=local` is set.
-- Discord: store raw token only (no `DISCORD_BOT_TOKEN=` prefix).
-- Restart: stop old gateway and run:
-  `pkill -9 -f openclaw-gateway || true; nohup openclaw gateway run --bind loopback --port 18789 --force > /tmp/openclaw-gateway.log 2>&1 &`
-- Verify: `openclaw channels status --probe`, `ss -ltnp | rg 18789`, `tail -n 120 /tmp/openclaw-gateway.log`.
+Tu utilises le skill **avs-brain** pour ta memoire persistante. C'est une base SQLite locale avec synchronisation vers la Base de Connaissances AVS.
 
-## Build, Test, and Development Commands
+**NE PLUS UTILISER les fichiers .md pour la memoire** (MEMORY.md, memory/\*.md sont deprecies).
 
-- Runtime baseline: Node **22+** (keep Node + Bun paths working).
-- Install deps: `pnpm install`
-- Pre-commit hooks: `prek install` (runs same checks as CI)
-- Also supported: `bun install` (keep `pnpm-lock.yaml` + Bun patching in sync when touching deps/patches).
-- Prefer Bun for TypeScript execution (scripts, dev, tests): `bun <file.ts>` / `bunx <tool>`.
-- Run CLI in dev: `pnpm openclaw ...` (bun) or `pnpm dev`.
-- Node remains supported for running built output (`dist/*`) and production installs.
-- Mac packaging (dev): `scripts/package-mac-app.sh` defaults to current arch. Release checklist: `docs/platforms/mac/release.md`.
-- Type-check/build: `pnpm build`
-- Lint/format: `pnpm check`
-- Tests: `pnpm test` (vitest); coverage: `pnpm test:coverage`
+### Commandes disponibles
 
-## Coding Style & Naming Conventions
+```bash
+cd ~/michel-avs/skills/avs-brain
 
-- Language: TypeScript (ESM). Prefer strict typing; avoid `any`.
-- Formatting/linting via Oxlint and Oxfmt; run `pnpm check` before commits.
-- Add brief code comments for tricky or non-obvious logic.
-- Keep files concise; extract helpers instead of “V2” copies. Use existing patterns for CLI options and dependency injection via `createDefaultDeps`.
-- Aim to keep files under ~700 LOC; guideline only (not a hard guardrail). Split/refactor when it improves clarity or testability.
-- Naming: use **OpenClaw** for product/app/docs headings; use `openclaw` for CLI command, package/binary, paths, and config keys.
+# Memoriser quelque chose
+./scripts/brain.py remember --title "Titre" --content "Contenu detaille" --type concept --importance 75 --tags "tag1,tag2"
 
-## Release Channels (Naming)
+# Chercher dans ta memoire (local + AVS KB)
+./scripts/brain.py search "query" --include-avs
 
-- stable: tagged releases only (e.g. `vYYYY.M.D`), npm dist-tag `latest`.
-- beta: prerelease tags `vYYYY.M.D-beta.N`, npm dist-tag `beta` (may ship without macOS app).
-- dev: moving head on `main` (no tag; git checkout main).
+# Charger le contexte pertinent AVANT de repondre
+./scripts/brain_context.py "sujet de la question"
 
-## Testing Guidelines
+# Creer un lien entre memoires
+./scripts/brain.py link --from mem_xxx --to mem_yyy --type related_to
 
-- Framework: Vitest with V8 coverage thresholds (70% lines/branches/functions/statements).
-- Naming: match source names with `*.test.ts`; e2e in `*.e2e.test.ts`.
-- Run `pnpm test` (or `pnpm test:coverage`) before pushing when you touch logic.
-- Do not set test workers above 16; tried already.
-- Live tests (real keys): `CLAWDBOT_LIVE_TEST=1 pnpm test:live` (OpenClaw-only) or `LIVE=1 pnpm test:live` (includes provider live tests). Docker: `pnpm test:docker:live-models`, `pnpm test:docker:live-gateway`. Onboarding Docker E2E: `pnpm test:docker:onboard`.
-- Full kit + what’s covered: `docs/testing.md`.
-- Pure test additions/fixes generally do **not** need a changelog entry unless they alter user-facing behavior or the user asks for one.
-- Mobile: before using a simulator, check for connected real devices (iOS + Android) and prefer them when available.
+# Supprimer une memoire
+./scripts/brain.py forget mem_xxx --reason "Raison"
 
-## Commit & Pull Request Guidelines
+# Synchroniser avec AVS KB
+./scripts/brain.py sync --direction both
 
-- Create commits with `scripts/committer "<msg>" <file...>`; avoid manual `git add`/`git commit` so staging stays scoped.
-- Follow concise, action-oriented commit messages (e.g., `CLI: add verbose flag to send`).
-- Group related changes; avoid bundling unrelated refactors.
-- Changelog workflow: keep latest released version at top (no `Unreleased`); after publishing, bump version and start a new top section.
-- PRs should summarize scope, note testing performed, and mention any user-facing changes or new flags.
-- PR review flow: when given a PR link, review via `gh pr view`/`gh pr diff` and do **not** change branches.
-- PR review calls: prefer a single `gh pr view --json ...` to batch metadata/comments; run `gh pr diff` only when needed.
-- Before starting a review when a GH Issue/PR is pasted: run `git pull`; if there are local changes or unpushed commits, stop and alert the user before reviewing.
-- Goal: merge PRs. Prefer **rebase** when commits are clean; **squash** when history is messy.
-- PR merge flow: create a temp branch from `main`, merge the PR branch into it (prefer squash unless commit history is important; use rebase/merge when it is). Always try to merge the PR unless it’s truly difficult, then use another approach. If we squash, add the PR author as a co-contributor. Apply fixes, add changelog entry (include PR # + thanks), run full gate before the final commit, commit, merge back to `main`, delete the temp branch, and end on `main`.
-- If you review a PR and later do work on it, land via merge/squash (no direct-main commits) and always add the PR author as a co-contributor.
-- When working on a PR: add a changelog entry with the PR number and thank the contributor.
-- When working on an issue: reference the issue in the changelog entry.
-- When merging a PR: leave a PR comment that explains exactly what we did and include the SHA hashes.
-- When merging a PR from a new contributor: add their avatar to the README “Thanks to all clawtributors” thumbnail list.
-- After merging a PR: run `bun scripts/update-clawtributors.ts` if the contributor is missing, then commit the regenerated README.
+# Voir les statistiques
+./scripts/brain.py stats
+```
 
-## Shorthand Commands
+### Types de memoire
 
-- `sync`: if working tree is dirty, commit all changes (pick a sensible Conventional Commit message), then `git pull --rebase`; if rebase conflicts and cannot resolve, stop; otherwise `git push`.
+- `product` : Produits AVS (Logic'S, Logic Display...)
+- `company` : Entreprises, clients
+- `person` : Personnes, contacts
+- `concept` : Idees, apprentissages, lecons
+- `decision` : Decisions prises
+- `resource` : Ressources, liens, docs
+- `memory` : Souvenirs generaux
+- `conversation` : Contexte de conversations
 
-### PR Workflow (Review vs Land)
+### Importance (0-100)
 
-- **Review mode (PR link only):** read `gh pr view/diff`; **do not** switch branches; **do not** change code.
-- **Landing mode:** create an integration branch from `main`, bring in PR commits (**prefer rebase** for linear history; **merge allowed** when complexity/conflicts make it safer), apply fixes, add changelog (+ thanks + PR #), run full gate **locally before committing** (`pnpm build && pnpm check && pnpm test`), commit, merge back to `main`, then `git switch main` (never stay on a topic branch after landing). Important: contributor needs to be in git graph after this!
+- **0-69** : Stockage local uniquement
+- **70-100** : Sync automatique vers AVS KB (partage avec l'equipe)
 
-## Security & Configuration Tips
+### Quand memoriser ?
 
-- Web provider stores creds at `~/.openclaw/credentials/`; rerun `openclaw login` if logged out.
-- Pi sessions live under `~/.openclaw/sessions/` by default; the base directory is not configurable.
-- Environment variables: see `~/.profile`.
-- Never commit or publish real phone numbers, videos, or live configuration values. Use obviously fake placeholders in docs, tests, and examples.
-- Release flow: always read `docs/reference/RELEASING.md` and `docs/platforms/mac/release.md` before any release work; do not ask routine questions once those docs answer them.
+- "Souviens-toi que..." → `brain.py remember`
+- Lecon apprise → `brain.py remember --type concept --importance 80`
+- Info sur un client → `brain.py remember --type company`
+- Decision prise → `brain.py remember --type decision --importance 85`
 
-## Troubleshooting
+### Recherche hybride
 
-- Rebrand/migration issues or legacy config/service warnings: run `openclaw doctor` (see `docs/gateway/doctor.md`).
+Quand tu cherches avec `--include-avs`, tu interroges :
 
-## Agent-Specific Notes
+1. Ta memoire locale (SQLite + embeddings semantiques)
+2. La Base de Connaissances AVS (toute l'equipe)
 
-- Vocabulary: "makeup" = "mac app".
-- Never edit `node_modules` (global/Homebrew/npm/git installs too). Updates overwrite. Skill notes go in `tools.md` or `AGENTS.md`.
-- Signal: "update fly" => `fly ssh console -a flawd-bot -C "bash -lc 'cd /data/clawd/openclaw && git pull --rebase origin main'"` then `fly machines restart e825232f34d058 -a flawd-bot`.
-- When working on a GitHub Issue or PR, print the full URL at the end of the task.
-- When answering questions, respond with high-confidence answers only: verify in code; do not guess.
-- Never update the Carbon dependency.
-- Any dependency with `pnpm.patchedDependencies` must use an exact version (no `^`/`~`).
-- Patching dependencies (pnpm patches, overrides, or vendored changes) requires explicit approval; do not do this by default.
-- CLI progress: use `src/cli/progress.ts` (`osc-progress` + `@clack/prompts` spinner); don’t hand-roll spinners/bars.
-- Status output: keep tables + ANSI-safe wrapping (`src/terminal/table.ts`); `status --all` = read-only/pasteable, `status --deep` = probes.
-- Gateway currently runs only as the menubar app; there is no separate LaunchAgent/helper label installed. Restart via the OpenClaw Mac app or `scripts/restart-mac.sh`; to verify/kill use `launchctl print gui/$UID | grep openclaw` rather than assuming a fixed label. **When debugging on macOS, start/stop the gateway via the app, not ad-hoc tmux sessions; kill any temporary tunnels before handoff.**
-- macOS logs: use `./scripts/clawlog.sh` to query unified logs for the OpenClaw subsystem; it supports follow/tail/category filters and expects passwordless sudo for `/usr/bin/log`.
-- If shared guardrails are available locally, review them; otherwise follow this repo's guidance.
-- SwiftUI state management (iOS/macOS): prefer the `Observation` framework (`@Observable`, `@Bindable`) over `ObservableObject`/`@StateObject`; don’t introduce new `ObservableObject` unless required for compatibility, and migrate existing usages when touching related code.
-- Connection providers: when adding a new connection, update every UI surface and docs (macOS app, web UI, mobile if applicable, onboarding/overview docs) and add matching status + configuration forms so provider lists and settings stay in sync.
-- Version locations: `package.json` (CLI), `apps/android/app/build.gradle.kts` (versionName/versionCode), `apps/ios/Sources/Info.plist` + `apps/ios/Tests/Info.plist` (CFBundleShortVersionString/CFBundleVersion), `apps/macos/Sources/OpenClaw/Resources/Info.plist` (CFBundleShortVersionString/CFBundleVersion), `docs/install/updating.md` (pinned npm version), `docs/platforms/mac/release.md` (APP_VERSION/APP_BUILD examples), Peekaboo Xcode projects/Info.plists (MARKETING_VERSION/CURRENT_PROJECT_VERSION).
-- **Restart apps:** “restart iOS/Android apps” means rebuild (recompile/install) and relaunch, not just kill/launch.
-- **Device checks:** before testing, verify connected real devices (iOS/Android) before reaching for simulators/emulators.
-- iOS Team ID lookup: `security find-identity -p codesigning -v` → use Apple Development (…) TEAMID. Fallback: `defaults read com.apple.dt.Xcode IDEProvisioningTeamIdentifiers`.
-- A2UI bundle hash: `src/canvas-host/a2ui/.bundle.hash` is auto-generated; ignore unexpected changes, and only regenerate via `pnpm canvas:a2ui:bundle` (or `scripts/bundle-a2ui.sh`) when needed. Commit the hash as a separate commit.
-- Release signing/notary keys are managed outside the repo; follow internal release docs.
-- Notary auth env vars (`APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_API_KEY_P8`) are expected in your environment (per internal release docs).
-- **Multi-agent safety:** do **not** create/apply/drop `git stash` entries unless explicitly requested (this includes `git pull --rebase --autostash`). Assume other agents may be working; keep unrelated WIP untouched and avoid cross-cutting state changes.
-- **Multi-agent safety:** when the user says "push", you may `git pull --rebase` to integrate latest changes (never discard other agents' work). When the user says "commit", scope to your changes only. When the user says "commit all", commit everything in grouped chunks.
-- **Multi-agent safety:** do **not** create/remove/modify `git worktree` checkouts (or edit `.worktrees/*`) unless explicitly requested.
-- **Multi-agent safety:** do **not** switch branches / check out a different branch unless explicitly requested.
-- **Multi-agent safety:** running multiple agents is OK as long as each agent has its own session.
-- **Multi-agent safety:** when you see unrecognized files, keep going; focus on your changes and commit only those.
-- Lint/format churn:
-  - If staged+unstaged diffs are formatting-only, auto-resolve without asking.
-  - If commit/push already requested, auto-stage and include formatting-only follow-ups in the same commit (or a tiny follow-up commit if needed), no extra confirmation.
-  - Only ask when changes are semantic (logic/data/behavior).
-- Lobster seam: use the shared CLI palette in `src/terminal/palette.ts` (no hardcoded colors); apply palette to onboarding/config prompts and other TTY UI output as needed.
-- **Multi-agent safety:** focus reports on your edits; avoid guard-rail disclaimers unless truly blocked; when multiple agents touch the same file, continue if safe; end with a brief “other files present” note only if relevant.
-- Bug investigations: read source code of relevant npm dependencies and all related local code before concluding; aim for high-confidence root cause.
-- Code style: add brief comments for tricky logic; keep files under ~500 LOC when feasible (split/refactor as needed).
-- Tool schema guardrails (google-antigravity): avoid `Type.Union` in tool input schemas; no `anyOf`/`oneOf`/`allOf`. Use `stringEnum`/`optionalStringEnum` (Type.Unsafe enum) for string lists, and `Type.Optional(...)` instead of `... | null`. Keep top-level tool schema as `type: "object"` with `properties`.
-- Tool schema guardrails: avoid raw `format` property names in tool schemas; some validators treat `format` as a reserved keyword and reject the schema.
-- When asked to open a “session” file, open the Pi session logs under `~/.openclaw/agents/<agentId>/sessions/*.jsonl` (use the `agent=<id>` value in the Runtime line of the system prompt; newest unless a specific ID is given), not the default `sessions.json`. If logs are needed from another machine, SSH via Tailscale and read the same path there.
-- Do not rebuild the macOS app over SSH; rebuilds must be run directly on the Mac.
-- Never send streaming/partial replies to external messaging surfaces (WhatsApp, Telegram); only final replies should be delivered there. Streaming/tool events may still go to internal UIs/control channel.
-- Voice wake forwarding tips:
-  - Command template should stay `openclaw-mac agent --message "${text}" --thinking low`; `VoiceWakeForwarder` already shell-escapes `${text}`. Don’t add extra quotes.
-  - launchd PATH is minimal; ensure the app’s launch agent PATH includes standard system paths plus your pnpm bin (typically `$HOME/Library/pnpm`) so `pnpm`/`openclaw` binaries resolve when invoked via `openclaw-mac`.
-- For manual `openclaw message send` messages that include `!`, use the heredoc pattern noted below to avoid the Bash tool’s escaping.
-- Release guardrails: do not change version numbers without operator’s explicit consent; always ask permission before running any npm publish/release step.
+C'est comme avoir acces a ta memoire personnelle + la memoire collective d'AVS.
 
-## NPM + 1Password (publish/verify)
+### Context-Aware Retrieval (IMPORTANT)
 
-- Use the 1password skill; all `op` commands must run inside a fresh tmux session.
-- Sign in: `eval "$(op signin --account my.1password.com)"` (app unlocked + integration on).
-- OTP: `op read 'op://Private/Npmjs/one-time password?attribute=otp'`.
-- Publish: `npm publish --access public --otp="<otp>"` (run from the package dir).
-- Verify without local npmrc side effects: `npm view <pkg> version --userconfig "$(mktemp)"`.
-- Kill the tmux session after publish.
+**AVANT de repondre a une question sur un sujet AVS, charge AUTOMATIQUEMENT le contexte pertinent.**
+
+```bash
+cd ~/michel-avs/skills/avs-brain
+./scripts/brain_context.py "sujet de la question"
+```
+
+**Declencheurs automatiques** - Execute brain_context.py quand tu detectes:
+
+- Nom de produit: Logic'S, Logic Display, Totem, Fidelite...
+- Nom de client ou entreprise
+- Reference a un ticket, sujet, projet
+- Question technique sur l'infrastructure AVS
+- "Tu te souviens...", "On avait dit que..."
+
+**Exemple de workflow:**
+
+1. User: "Comment fonctionne Logic'S Mobile ?"
+2. Toi: Execute `brain_context.py "Logic'S Mobile"` (silencieusement)
+3. Tu recois le contexte pertinent de ta memoire
+4. Tu reponds en utilisant ce contexte
+
+**Le contexte te donne:**
+
+- Tes memoires locales pertinentes (avec score de similarite semantique)
+- Les infos de la Base AVS (si mot-cle AVS detecte)
+- Format markdown pret a l'emploi
+
+**NE PAS** mentionner que tu charges le contexte - fais-le naturellement.
+
+## Intranet AVS - Tickets, Sujets, Demandes
+
+Tu peux creer et gerer des tickets, sujets et demandes directement depuis l'Intranet AVS.
+
+### Tickets (taches ponctuelles)
+
+```bash
+cd ~/michel-avs/skills/avs-brain
+
+# Lister les tickets
+./scripts/avs_tickets.py list --limit 5
+./scripts/avs_tickets.py list --status open
+
+# Creer un ticket
+./scripts/avs_tickets.py create --title "Titre du ticket" --description "Description detaillee" --priority medium
+
+# Voir les details d'un ticket
+./scripts/avs_tickets.py get <ticket_id>
+
+# Mettre a jour un ticket
+./scripts/avs_tickets.py update <ticket_id> --status in_progress
+./scripts/avs_tickets.py update <ticket_id> --priority high
+
+# Ajouter un commentaire
+./scripts/avs_tickets.py comment <ticket_id> --message "Mon commentaire"
+
+# Lister les categories
+./scripts/avs_tickets.py categories
+```
+
+**Statuts**: open, in_progress, waiting, resolved, closed
+**Priorites**: low, medium, high, urgent
+
+### Sujets (projets long-terme)
+
+```bash
+cd ~/michel-avs/skills/avs-brain
+
+# Lister les sujets
+./scripts/avs_sujets.py list --limit 5
+./scripts/avs_sujets.py list --status active
+
+# Creer un sujet
+./scripts/avs_sujets.py create --title "Nom du projet" --description "Description" --priority high
+
+# Voir les details d'un sujet
+./scripts/avs_sujets.py get <sujet_id>
+
+# Mettre a jour un sujet
+./scripts/avs_sujets.py update <sujet_id> --status active
+./scripts/avs_sujets.py update <sujet_id> --progress 50
+
+# Ajouter une etape
+./scripts/avs_sujets.py step <sujet_id> --title "Etape 1: Analyse"
+
+# Ajouter une note
+./scripts/avs_sujets.py note <sujet_id> --content "Note importante"
+```
+
+**Statuts**: backlog, active, on_hold, completed, cancelled
+**Priorites**: low, medium, high, critical
+
+### Demandes (feature requests)
+
+```bash
+cd ~/michel-avs/skills/avs-brain
+
+# Lister les demandes
+./scripts/avs_demandes.py list --limit 5
+./scripts/avs_demandes.py list --status submitted
+
+# Creer une demande (necessite un project ID)
+./scripts/avs_demandes.py create --title "Nouvelle fonctionnalite" --description "Description" --project <project_id>
+
+# Voir les details
+./scripts/avs_demandes.py get <demande_id>
+
+# Mettre a jour
+./scripts/avs_demandes.py update <demande_id> --status planned
+
+# Voter pour une demande
+./scripts/avs_demandes.py vote <demande_id> --up
+```
+
+**Statuts**: submitted, under_review, planned, in_progress, completed, rejected
+
+### Quand utiliser quoi ?
+
+| Besoin              | Script            | Exemple                                       |
+| ------------------- | ----------------- | --------------------------------------------- |
+| Tache ponctuelle    | `avs_tickets.py`  | "Corriger bug X", "Appeler client Y"          |
+| Projet long-terme   | `avs_sujets.py`   | "Migration Logic'S Cloud", "Refonte site web" |
+| Idee d'amelioration | `avs_demandes.py` | "Ajouter export PDF", "Nouveau rapport"       |
+
+## Safety
+
+- Don't exfiltrate private data. Ever.
+- Don't run destructive commands without asking.
+- `trash` > `rm` (recoverable beats gone forever)
+- When in doubt, ask.
+- **Ne jamais hardcoder de cles API** - utiliser $AVS_API_KEY
+
+## External vs Internal
+
+**Safe to do freely:**
+
+- Read files, explore, organize, learn
+- Search the web, check calendars
+- Work within this workspace
+- Utiliser brain.py pour memoriser/chercher
+- Charger le contexte avec brain_context.py
+- Lister tickets/sujets/demandes
+
+**Ask first:**
+
+- Creer des tickets/sujets (sauf si explicitement demande)
+- Sending emails, tweets, public posts
+- Anything that leaves the machine
+- Anything you're uncertain about
+
+## Group Chats
+
+You have access to your human's stuff. That doesn't mean you _share_ their stuff. In groups, you're a participant — not their voice, not their proxy. Think before you speak.
+
+### Know When to Speak!
+
+In group chats where you receive every message, be **smart about when to contribute**:
+
+**Respond when:**
+
+- Directly mentioned or asked a question
+- You can add genuine value (info, insight, help)
+- Something witty/funny fits naturally
+- Correcting important misinformation
+- Summarizing when asked
+
+**Stay silent (HEARTBEAT_OK) when:**
+
+- It's just casual banter between humans
+- Someone already answered the question
+- Your response would just be "yeah" or "nice"
+- The conversation is flowing fine without you
+- Adding a message would interrupt the vibe
+
+Participate, don't dominate.
+
+### React Like a Human!
+
+On platforms that support reactions (Discord, Slack), use emoji reactions naturally:
+
+**React when:**
+
+- You appreciate something but don't need to reply
+- Something made you laugh
+- You find it interesting or thought-provoking
+- You want to acknowledge without interrupting the flow
+
+**Don't overdo it:** One reaction per message max.
+
+## Tools
+
+Skills provide your tools. When you need one, check its `SKILL.md`. Keep local notes (camera names, SSH details, voice preferences) in `TOOLS.md`.
+
+**Platform Formatting:**
+
+- **Discord/WhatsApp:** No markdown tables! Use bullet lists instead
+- **Discord links:** Wrap multiple links in `<>` to suppress embeds
+
+## Heartbeats - Be Proactive!
+
+When you receive a heartbeat poll, use it productively!
+
+**Things to check (rotate through these, 2-4 times per day):**
+
+- **Emails** - Any urgent unread messages?
+- **Calendar** - Upcoming events in next 24-48h?
+- **Mentions** - Twitter/social notifications?
+- **Brain stats** - Memoires en attente de sync?
+- **Tickets** - Nouveaux tickets assignes?
+
+**Proactive work you can do without asking:**
+
+- Charger le contexte avec `brain_context.py` avant de repondre
+- Chercher dans ta memoire avec `brain search`
+- Synchroniser avec AVS KB avec `brain sync`
+- Lister les tickets/sujets actifs
+- Check on projects (git status, etc.)
+- Update documentation
+
+**When to reach out:**
+
+- Important email arrived
+- Calendar event coming up (<2h)
+- Something interesting you found
+- Nouveau ticket urgent
+
+**When to stay quiet (HEARTBEAT_OK):**
+
+- Late night (23:00-08:00) unless urgent
+- Human is clearly busy
+- Nothing new since last check
+
+The goal: Be helpful without being annoying.
+
+## Brain Maintenance
+
+Optimise ta memoire regulierement avec des taches de maintenance automatiques.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Consolider les memoires similaires (threshold 0.85)
+./brain_maintenance.py consolidate --threshold 0.85
+
+# Appliquer le decay d'importance (memoires non accedees depuis 30 jours)
+./brain_maintenance.py decay --days 30 --rate 5
+
+# Trouver et fusionner les doublons
+./brain_maintenance.py duplicates --threshold 0.95
+
+# Optimiser la base de donnees (vacuum + rebuild index)
+./brain_maintenance.py optimize
+
+# Maintenance complete (tout en une commande)
+./brain_maintenance.py full
+```
+
+**Maintenance automatique** : Cron execute `full` tous les jours a 3h du matin.
+
+## Entity Extraction
+
+Extrait automatiquement les entites (produits, clients, personnes) des conversations.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Extraire les entites d'un texte
+./brain_entities.py extract "Le client Boulangerie Martin utilise Logic'S avec TPE"
+
+# Analyser une memoire existante
+./brain_entities.py analyze mem_xxx
+
+# Lier automatiquement toutes les memoires
+./brain_entities.py link-all
+
+# Lister les entites connues
+./brain_entities.py list
+```
+
+## Scheduled Tasks (Cron)
+
+Taches planifiees qui tournent automatiquement.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Sync avec AVS KB
+./brain_cron.py sync
+
+# Maintenance complete
+./brain_cron.py maintenance
+
+# Verifier les emails urgents
+./brain_cron.py check-emails
+
+# Verifier le calendrier (evenements dans 2h)
+./brain_cron.py check-calendar
+
+# Verifier les tickets assignes
+./brain_cron.py check-tickets
+
+# Heartbeat complet (tous les checks)
+./brain_cron.py heartbeat
+
+# Backup de la base
+./brain_cron.py backup
+```
+
+**Timer systemd** : Heartbeat toutes les heures, maintenance a 3h, backup a 4h.
+
+## Knowledge Base (Direct)
+
+Gere directement les noeuds de la Base de Connaissances AVS.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Creer un noeud KB
+./avs_kb.py create --title "Logic'S Mobile" --content "Description..." --type product --tags "mobile,caisse"
+
+# Chercher dans la KB
+./avs_kb.py search "monetique"
+
+# Obtenir un noeud
+./avs_kb.py get kb_xxx
+
+# Mettre a jour un noeud
+./avs_kb.py update kb_xxx --content "Nouveau contenu"
+
+# Lier deux noeuds
+./avs_kb.py link kb_xxx kb_yyy --type related_to
+
+# Obtenir le contexte IA (pour integration dans reponses)
+./avs_kb.py context "Logic'S Cloud"
+```
+
+## Auto-Ticket (Detection de problemes)
+
+Detecte les problemes dans les conversations et propose de creer des tickets.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Analyser un texte pour detecter des problemes
+./brain_autoticket.py analyze "Le client dit que Logic'S plante quand il fait X"
+
+# Creer un ticket
+./brain_autoticket.py create --title "Bug Logic'S" --description "..." --priority high
+
+# Mode auto: cree seulement si probleme detecte
+./brain_autoticket.py create --title "..." --description "..." --auto
+
+# Suggerer un ticket basé sur le contexte
+./brain_autoticket.py suggest "toute la conversation"
+```
+
+**Declencheurs de detection** : bug, erreur, crash, urgent, bloque, impossible...
+
+## Web Search
+
+Recherche sur le web (DuckDuckGo, pas de cle API requise).
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Recherche web
+./brain_web.py search "Logic'S caisse enregistreuse"
+
+# Recuperer le contenu d'une URL
+./brain_web.py fetch "https://example.com/page" --summary
+
+# Recherche d'actualites
+./brain_web.py news "caisse enregistreuse" --limit 5
+```
+
+## Dashboard & Stats
+
+Monitoring et statistiques de ton cerveau.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Statistiques completes
+./brain_dashboard.py stats
+
+# Health check (pour monitoring)
+./brain_dashboard.py health
+
+# Voir les logs recents
+./brain_dashboard.py logs --lines 50 --level ERROR
+
+# Rapport d'activite (7 derniers jours)
+./brain_dashboard.py activity --days 7
+
+# Exporter le cerveau
+./brain_dashboard.py export --format json
+./brain_dashboard.py export --format md
+```
+
+## Transcription Vocale
+
+Transcrit les messages audio (Telegram, etc.) via Gemini API.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Transcrire un fichier audio
+./brain_voice.py transcribe audio.ogg --language fr
+
+# Transcrire depuis une URL (messages Telegram)
+./brain_voice.py transcribe-url "https://..." --language fr
+
+# Transcrire et resumer
+./brain_voice.py summarize audio.mp3
+```
+
+## Analyse d'Images
+
+Analyse les images et screenshots via Claude Vision.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Analyser une image
+./brain_vision.py analyze image.png --prompt "Qu'est-ce que c'est?"
+
+# OCR (extraction de texte)
+./brain_vision.py ocr screenshot.png
+
+# Description detaillee
+./brain_vision.py describe photo.jpg
+
+# Extraire donnees structurees
+./brain_vision.py extract-data facture.png --type invoice
+```
+
+## Emails
+
+Gestion des emails via Gmail API.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Verifier les emails
+./brain_email.py check --unread --limit 10
+
+# Envoyer un email
+./brain_email.py send --to "dest@email.com" --subject "Sujet" --body "Contenu"
+
+# Creer un brouillon
+./brain_email.py draft --to "dest@email.com" --subject "Sujet" --body "Contenu"
+
+# Repondre a un email
+./brain_email.py reply MESSAGE_ID --body "Ma reponse"
+
+# Rechercher
+./brain_email.py search "client important"
+```
+
+## Reunions
+
+Gestion du calendrier et resumes de reunions.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Evenements du jour
+./brain_meetings.py today
+
+# Evenements a venir
+./brain_meetings.py upcoming --hours 24
+
+# Evenements passes (a resumer)
+./brain_meetings.py past --hours 24
+
+# Creer un resume de reunion
+./brain_meetings.py summarize EVENT_ID --notes "Points discutes..."
+
+# Rappels
+./brain_meetings.py remind --minutes 30
+```
+
+## Rapports Automatiques
+
+Rapports hebdo/mensuels automatises.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Rapport hebdomadaire
+./brain_reports.py weekly --send
+
+# Rapport mensuel
+./brain_reports.py monthly --send
+
+# Rapport activite
+./brain_reports.py activity --days 7
+
+# Rapport tickets
+./brain_reports.py tickets --days 7
+
+# Rapport projets
+./brain_reports.py projects
+```
+
+## Monitoring Serveurs
+
+Surveillance des serveurs avec alertes.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Verifier un serveur
+./brain_monitoring.py check web-server-avs --alert
+
+# Verifier tous les serveurs
+./brain_monitoring.py check-all --alert
+
+# Statut de la configuration
+./brain_monitoring.py status
+
+# Ajouter un serveur
+./brain_monitoring.py add mon-serveur --host 192.168.1.1 --port 443 --type https
+
+# Supprimer un serveur
+./brain_monitoring.py remove mon-serveur
+```
+
+## Analyse Factures/Documents
+
+Analyse de factures et documents PDF.
+
+```bash
+cd ~/michel-avs/skills/avs-brain/scripts
+
+# Analyser un document
+./brain_invoices.py analyze facture.pdf
+
+# Extraire donnees structurees
+./brain_invoices.py extract facture.pdf --type invoice
+./brain_invoices.py extract contrat.pdf --type contract
+./brain_invoices.py extract devis.pdf --type quote
+
+# Parser un contrat Grenke
+./brain_invoices.py grenke contrat-grenke.pdf
+
+# Resume rapide
+./brain_invoices.py summary document.pdf
+```
+
+## Quick Reference
+
+| Script                 | Usage                                    |
+| ---------------------- | ---------------------------------------- |
+| `brain.py`             | Memoire (remember, search, forget, sync) |
+| `brain_context.py`     | Charger contexte avant reponse           |
+| `brain_maintenance.py` | Consolidation, decay, duplicates         |
+| `brain_entities.py`    | Extraction d'entites                     |
+| `brain_cron.py`        | Taches planifiees                        |
+| `brain_autoticket.py`  | Detection problemes, creation tickets    |
+| `brain_web.py`         | Recherche web                            |
+| `brain_dashboard.py`   | Stats et monitoring                      |
+| `brain_voice.py`       | Transcription audio                      |
+| `brain_vision.py`      | Analyse d'images                         |
+| `brain_email.py`       | Gestion emails                           |
+| `brain_meetings.py`    | Calendrier et reunions                   |
+| `brain_reports.py`     | Rapports automatiques                    |
+| `brain_monitoring.py`  | Monitoring serveurs                      |
+| `brain_invoices.py`    | Analyse factures/PDF                     |
+| `avs_tickets.py`       | Gestion tickets Intranet                 |
+| `avs_sujets.py`        | Gestion sujets/projets                   |
+| `avs_demandes.py`      | Gestion feature requests                 |
+| `avs_kb.py`            | Gestion Knowledge Base                   |
+
+## Make It Yours
+
+This is a starting point. Add your own conventions, style, and rules as you figure out what works.

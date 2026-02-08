@@ -1,0 +1,16 @@
+[Unit]
+Description=Michel Brain Scheduled Tasks
+After=network-online.target
+
+[Timer]
+# Run heartbeat every hour
+OnCalendar=*:00
+# Run maintenance daily at 3am
+OnCalendar=*-*-* 03:00:00
+# Run backup daily at 4am
+OnCalendar=*-*-* 04:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

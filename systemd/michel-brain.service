@@ -1,0 +1,17 @@
+[Unit]
+Description=Michel Brain Scheduled Task
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/michel/michel-avs/skills/avs-brain/scripts
+ExecStart=/usr/bin/python3 brain_cron.py heartbeat
+Environment="BRAIN_DB_PATH=/home/michel/michel-avs/skills/avs-brain/brain.db"
+Environment="MICHEL_LOG_DIR=/home/michel/michel-avs/logs"
+Environment="AVS_INTRANET_URL=https://intra.avstech.fr"
+
+# Load API key from environment file
+EnvironmentFile=-/home/michel/.config/michel/env
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,111 @@
+{
+  "id": "avs-brain",
+  "name": "AVS Brain",
+  "description": "Cerveau de Michel avec memoire persistante, emails, transcription, vision, calendrier, monitoring",
+  "version": "1.0.0",
+  "tools": [
+    {
+      "name": "brain_remember",
+      "description": "Memoriser une information importante dans le cerveau local",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain.py remember",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "description": "Titre court de la memoire" },
+          "content": { "type": "string", "description": "Contenu detaille a memoriser" },
+          "type": {
+            "type": "string",
+            "enum": [
+              "product",
+              "company",
+              "person",
+              "concept",
+              "decision",
+              "resource",
+              "memory",
+              "conversation"
+            ],
+            "default": "memory"
+          },
+          "importance": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "default": 50,
+            "description": "0-100, les memoires >= 70 sont synchronisees avec AVS KB"
+          },
+          "tags": { "type": "string", "description": "Tags separes par des virgules" }
+        },
+        "required": ["title", "content"]
+      }
+    },
+    {
+      "name": "brain_search",
+      "description": "Rechercher dans le cerveau (memoire locale + AVS KB)",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain.py search",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": { "type": "string", "description": "Termes de recherche" },
+          "limit": { "type": "integer", "default": 10, "description": "Nombre max de resultats" }
+        },
+        "required": ["query"]
+      }
+    },
+    {
+      "name": "brain_stats",
+      "description": "Afficher les statistiques du cerveau",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain.py stats",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "brain_sync",
+      "description": "Synchroniser le cerveau local avec AVS KB",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain.py sync",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "direction": { "type": "string", "enum": ["push", "pull", "both"], "default": "both" }
+        }
+      }
+    },
+    {
+      "name": "email_check",
+      "description": "Verifier les nouveaux emails Gmail",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_email.py check",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "unread_only": { "type": "boolean", "default": true },
+          "limit": { "type": "integer", "default": 10 }
+        }
+      }
+    },
+    {
+      "name": "email_send",
+      "description": "Envoyer un email via Gmail",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_email.py send",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "to": { "type": "string", "description": "Adresse email destinataire" },
+          "subject": { "type": "string", "description": "Sujet de l'email" },
+          "body": { "type": "string", "description": "Corps de l'email" }
+        },
+        "required": ["to", "subject", "body"]
+      }
+    },
+    {
+      "name": "calendar_today",
+      "description": "Voir les evenements du jour",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_meetings.py today",
+      "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "server_status",
+      "description": "Verifier l'etat des serveurs AVS",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_monitoring.py status",
+      "parameters": { "type": "object", "properties": {} }
+    }
+  ]
+}

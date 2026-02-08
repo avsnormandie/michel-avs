@@ -1,0 +1,26 @@
+[Unit]
+Description=Michel - Assistant IA personnel AVS
+After=network.target
+Documentation=https://github.com/avsnormandie/michel
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/michel
+ExecStart=/usr/bin/clawdbot daemon start
+ExecStop=/usr/bin/clawdbot daemon stop
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+
+# Charger les variables depuis .env
+EnvironmentFile=-/home/%i/michel/.env
+
+# Sécurité
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/%i/.clawdbot /home/%i/michel-workspace /tmp/clawdbot
+
+[Install]
+WantedBy=multi-user.target
