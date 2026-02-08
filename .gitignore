@@ -71,3 +71,9 @@ USER.md
 
 # local tooling
 .serena/
+.pi/
+
+# AVS Brain runtime data
+logs/
+skills/avs-brain/brain.db
+skills/avs-brain/data/
