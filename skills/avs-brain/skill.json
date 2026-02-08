@@ -121,6 +121,46 @@
           }
         }
       }
+    },
+    {
+      "name": "security_audit",
+      "description": "Audit de securite complet (GK41 local + serveurs OVH distants)",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_security_audit.py audit",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "local": {
+            "type": "boolean",
+            "default": false,
+            "description": "Auditer seulement le GK41 local"
+          },
+          "remote": {
+            "type": "boolean",
+            "default": false,
+            "description": "Auditer seulement les serveurs distants"
+          },
+          "send": {
+            "type": "boolean",
+            "default": false,
+            "description": "Envoyer le rapport sur Telegram"
+          }
+        }
+      }
+    },
+    {
+      "name": "security_certs",
+      "description": "Verifier les certificats SSL de tous les serveurs (expiration, TLS)",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_security_audit.py certs",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "send": {
+            "type": "boolean",
+            "default": false,
+            "description": "Envoyer le rapport sur Telegram"
+          }
+        }
+      }
     }
   ]
 }
