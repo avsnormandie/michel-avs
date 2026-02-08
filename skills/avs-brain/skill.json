@@ -102,10 +102,25 @@
       "parameters": { "type": "object", "properties": {} }
     },
     {
-      "name": "server_status",
-      "description": "Verifier l'etat des serveurs AVS",
-      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_monitoring.py status",
+      "name": "server_check",
+      "description": "Verifier l'etat de tous les serveurs, services et ressources AVS",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_monitoring.py check-all --alert",
       "parameters": { "type": "object", "properties": {} }
+    },
+    {
+      "name": "server_report",
+      "description": "Generer un rapport monitoring lisible (serveurs, services, disque, RAM)",
+      "command": "python3 /home/michel/michel-avs/skills/avs-brain/scripts/brain_monitoring.py report",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "send": {
+            "type": "boolean",
+            "default": false,
+            "description": "Envoyer le rapport sur Telegram"
+          }
+        }
+      }
     }
   ]
 }
